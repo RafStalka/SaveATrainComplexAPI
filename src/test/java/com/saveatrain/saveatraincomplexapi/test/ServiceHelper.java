@@ -2,34 +2,35 @@ package com.saveatrain.saveatraincomplexapi.test;
 
 import com.saveatrain.saveatraincomplexapi.test.serialising.SalesAgentSessionPOJO;
 import com.saveatrain.utils.GetPropertyValues;
-import io.restassured.RestAssured;
 import io.restassured.response.Response;
-import io.restassured.specification.RequestSpecification;
+
+import java.util.Map;
 
 public class ServiceHelper {
+    private ApiClient apiClient;
+    private String baseUri;
+    private String login;
+    private String passwd;
 
-    GetPropertyValues getPropertyValues = new GetPropertyValues();
-    private final String LOGIN = getPropertyValues.getPropValue("login");
-    private final String PASSWD = getPropertyValues.getPropValue("password");
-    private final String BASE_URI = getPropertyValues.getPropValue("serverURL");
+    public ServiceHelper() {
+        initializeProperties();
+        apiClient = new ApiClient(baseUri);
+    }
+
+    private void initializeProperties() {
+        GetPropertyValues properties = new GetPropertyValues();
+        this.baseUri = properties.getProperty("serverURL");
+        this.login = properties.getProperty("login");
+        this.passwd = properties.getProperty("password");
+    }
 
     public Response sendPostRequest(String endpoint) {
+        SalesAgentSessionPOJO body = new SalesAgentSessionPOJO(login, passwd);
+        return apiClient.sendPostRequest(endpoint, body);
+    }
 
-        SalesAgentSessionPOJO body = new SalesAgentSessionPOJO(LOGIN, PASSWD);
-        RestAssured.useRelaxedHTTPSValidation();
-        RestAssured.baseURI = BASE_URI;
-
-        RequestSpecification requestSpec = RestAssured.with()
-                .contentType("application/json")
-                .baseUri(BASE_URI)
-                .body(body);
-                //.log().all();
-
-        return requestSpec
-                .when()
-                .post(endpoint)
-                .then()
-                .extract()
-                .response();
+    public Response sendPostRequestWithHeaders(String endpoint, Map<String, String> headers) {
+        SalesAgentSessionPOJO body = new SalesAgentSessionPOJO(login, passwd);
+        return apiClient.sendPostRequest(endpoint, body, headers);
     }
 }
