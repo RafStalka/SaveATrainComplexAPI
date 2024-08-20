@@ -6,7 +6,7 @@ import java.util.Properties;
 
 public class GetPropertyValues {
 
-    private Properties properties = new Properties();
+    private final Properties properties = new Properties();
 
     public GetPropertyValues() {
         loadProperties();
