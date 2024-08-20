@@ -1,10 +1,18 @@
-package com.saveatrain.saveatraincomplexapi.test.serialising;
+package com.saveatrain.saveatraincomplexapi.serialising;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class _0 {
+
+    public _0() {
+    }
+
+    public _0(Integer age, PassengerTypeAttributes passengerTypeAttributes) {
+        this.age = age;
+        this.passengerTypeAttributes = passengerTypeAttributes;
+    }
 
     @JsonProperty("age")
     private Integer age;

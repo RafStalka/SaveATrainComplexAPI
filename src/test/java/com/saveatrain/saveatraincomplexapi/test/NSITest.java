@@ -1,9 +1,13 @@
 package com.saveatrain.saveatraincomplexapi.test;
 
+import com.saveatrain.saveatraincomplexapi.api.TokenManager;
+import com.saveatrain.saveatraincomplexapi.api.applicationApi.SearchApi;
+import com.saveatrain.saveatraincomplexapi.serialising.SalesAgentSessionPOJO;
+import com.saveatrain.utils.GetPropertyValues;
 import io.restassured.RestAssured;
 import io.restassured.config.RestAssuredConfig;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
@@ -11,29 +15,21 @@ import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class NSITest {
+    private SalesAgentSessionPOJO loginDetails;
+    private String token;
 
-    private static ServiceHelper serviceHelper;
-    private static String token;
-
-    @BeforeAll
-    public static void setUp() {
-        initializeServiceHelper();
-        authenticateAndObtainToken();
-    }
-
-    private static void initializeServiceHelper() {
-        serviceHelper = new ServiceHelper();
-    }
-
-    private static void authenticateAndObtainToken() {
-        String endpoint = "/api/sales_agent_sessions";
-        Response response = serviceHelper.sendPostRequest(endpoint);
-        token = response.jsonPath().getString("access_token");
-
-        assertNotNull(token, "Token should not be null");
+    @BeforeEach
+    public void setUp() {
+        loginDetails = new SalesAgentSessionPOJO(
+                GetPropertyValues.getProperty("login"),
+                GetPropertyValues.getProperty("password")
+        );
+        token = TokenManager.getToken(loginDetails);
+        assertNotNull(token, "Token should be retrieved and not null");
     }
 
     @Test
@@ -43,13 +39,9 @@ public class NSITest {
 
     @Test
     public void testSendPostRequest() {
-        Response response = serviceHelper.sendPostRequest("/api/sales_agent_sessions");
+        Response response = SearchApi.postRequest(loginDetails);
         assertEquals(200, response.getStatusCode());
-    }
-
-    @Test
-    public void verifyTokenIsRetrievedInSetupTest() {
-        assertNotNull(token, "Token should already have been obtained in setUp");
+        assertNotNull(response.jsonPath().getString("access_token"), "Access token should not be null");
     }
 
     @Test
@@ -59,7 +51,8 @@ public class NSITest {
         headers.put("Custom-Header", "CustomValue");
 
         String endpoint = "/api/sales_agent_sessions";
-        Response response = serviceHelper.sendPostRequestWithHeaders(endpoint, headers);
+        String requestBody = "{\"email\": \"" + loginDetails.getEmail() + "\", \"password\": \"" + loginDetails.getPassword() + "\"}";
+        Response response = new SearchApi().sendPostRequest(endpoint, requestBody, headers);
 
         assertEquals(200, response.getStatusCode(), "Expected status code is 200");
     }
@@ -71,11 +64,10 @@ public class NSITest {
         headers.put("Custom-Header", "CustomValue");
 
         String invalidEndpoint = "/api/invalid_endpoint";
-        Response response = serviceHelper.sendPostRequestWithHeaders(invalidEndpoint, headers);
+        String requestBody = "{\"email\": \"" + loginDetails.getEmail() + "\", \"password\": \"" + loginDetails.getPassword() + "\"}";
+        Response response = new SearchApi().sendPostRequest(invalidEndpoint, requestBody, headers);
 
         assertEquals(404, response.getStatusCode(), "Expected status code is 404 for invalid endpoint");
         System.out.println("Response: " + response.asString());
     }
-
-
 }

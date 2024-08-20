@@ -1,10 +1,18 @@
-package com.saveatrain.saveatraincomplexapi.test.serialising;
+package com.saveatrain.saveatraincomplexapi.serialising;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class RouteAttributes {
+
+    public RouteAttributes() {
+    }
+
+    public RouteAttributes(OriginStationAttributes originStationAttributes, DestinationStationAttributes destinationStationAttributes) {
+        this.originStationAttributes = originStationAttributes;
+        this.destinationStationAttributes = destinationStationAttributes;
+    }
 
     @JsonProperty("origin_station_attributes")
     private OriginStationAttributes originStationAttributes;

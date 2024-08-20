@@ -1,10 +1,17 @@
-package com.saveatrain.saveatraincomplexapi.test.serialising;
+package com.saveatrain.saveatraincomplexapi.serialising;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class OriginStationAttributes {
+
+    public OriginStationAttributes() {
+    }
+
+    public OriginStationAttributes(String uid) {
+        this.uid = uid;
+    }
 
     @JsonProperty("uid")
     private String uid;

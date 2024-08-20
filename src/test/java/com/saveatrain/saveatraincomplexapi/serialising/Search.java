@@ -1,10 +1,19 @@
-package com.saveatrain.saveatraincomplexapi.test.serialising;
+package com.saveatrain.saveatraincomplexapi.serialising;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Search {
+
+    public Search() {
+    }
+
+    public Search(String departureDatetime, SearchesPassengersAttributes searchesPassengersAttributes, RouteAttributes routeAttributes) {
+        this.departureDatetime = departureDatetime;
+        this.searchesPassengersAttributes = searchesPassengersAttributes;
+        this.routeAttributes = routeAttributes;
+    }
 
     @JsonProperty("departure_datetime")
     private String departureDatetime;

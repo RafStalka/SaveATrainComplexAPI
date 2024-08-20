@@ -1,21 +1,21 @@
-package com.saveatrain.saveatraincomplexapi.test.serialising;
+package com.saveatrain.saveatraincomplexapi.serialising;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-//@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class SalesAgentSessionPOJO {
 
-    @JsonProperty
-    private String email;
-    @JsonProperty
-    private String password;
+    public SalesAgentSessionPOJO() {
+
+    }
 
     public SalesAgentSessionPOJO(String email, String password) {
         this.email = email;
         this.password = password;
     }
-    /*@JsonProperty("email")
+
+    @JsonProperty("email")
     private String email;
     @JsonProperty("password")
     private String password;
@@ -38,6 +38,6 @@ public class SalesAgentSessionPOJO {
     @JsonProperty("password")
     public void setPassword(String password) {
         this.password = password;
-    }*/
+    }
 
 }
