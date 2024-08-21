@@ -18,11 +18,7 @@ public class GetPropertyValues {
     }
 
     public static String getProperty(String key) {
-        String value = properties.getProperty(key);
-        if (value == null) {
-            throw new RuntimeException("Property " + key + " not found in the config.properties file.");
-        }
-        return value;
+        return properties.getProperty(key);
     }
 
 }

@@ -1,30 +1,31 @@
 package com.saveatrain.saveatraincomplexapi.api;
 
-import io.restassured.response.Response;
+import com.saveatrain.utils.GetPropertyValues;
+import io.restassured.builder.RequestSpecBuilder;
+import io.restassured.builder.ResponseSpecBuilder;
+import io.restassured.filter.log.LogDetail;
+import io.restassured.specification.RequestSpecification;
+import io.restassured.specification.ResponseSpecification;
 
-import static com.saveatrain.saveatraincomplexapi.api.ApiClient.getRequestSpec;
-import static com.saveatrain.saveatraincomplexapi.api.ApiClient.getResponseSpec;
-import static io.restassured.RestAssured.given;
+public abstract class RestResource {
 
-public class RestResource {
+    private static final String BASE_URI = GetPropertyValues.getProperty("base.uri");
+    private static final String BASE_PATH = GetPropertyValues.getProperty("base.path");
+    private static final String CONTENT_TYPE = GetPropertyValues.getProperty("content.type");
 
-    public static Response postRequest(String endpoint, Object searchApi) {
-        return given(getRequestSpec()).
-                body(searchApi).
-                when().post(endpoint).
-                then().spec(getResponseSpec()).
-                extract().
-                response();
+    protected RequestSpecification getRequestSpec() {
+        return new RequestSpecBuilder().
+                setBaseUri(BASE_URI).
+                setBasePath(BASE_PATH).
+                setContentType(CONTENT_TYPE).
+                log(LogDetail.ALL).
+                build();
     }
 
-    public static Response getRequest(String endpoint, String token, String email, String searchId) {
-        return given(getRequestSpec()).
-                header("X-Agent-Email", email).
-                header("X-Agent-Token", token).
-                when().get(endpoint + "/" + searchId).
-                then().spec(getResponseSpec()).
-                extract().
-                response();
+    protected ResponseSpecification getResponseSpec() {
+        return new ResponseSpecBuilder().
+                log(LogDetail.ALL).
+                build();
     }
 
 }

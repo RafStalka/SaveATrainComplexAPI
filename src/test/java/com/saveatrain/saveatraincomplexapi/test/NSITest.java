@@ -38,8 +38,8 @@ public class NSITest {
     }
 
     @Test
-    public void testSendPostRequest() {
-        Response response = SearchApi.postRequest(loginDetails);
+    public void testPostSalesAgentSession() {
+        Response response = SearchApi.postSalesAgentSession(loginDetails);
         assertEquals(200, response.getStatusCode());
         assertNotNull(response.jsonPath().getString("access_token"), "Access token should not be null");
     }
@@ -52,7 +52,8 @@ public class NSITest {
 
         String endpoint = "/api/sales_agent_sessions";
         String requestBody = "{\"email\": \"" + loginDetails.getEmail() + "\", \"password\": \"" + loginDetails.getPassword() + "\"}";
-        Response response = new SearchApi().sendPostRequest(endpoint, requestBody, headers);
+        SearchApi searchApi = new SearchApi() {}; // Instantiate like this since SearchApi is abstract
+        Response response = searchApi.sendPostRequest(endpoint, requestBody, headers);
 
         assertEquals(200, response.getStatusCode(), "Expected status code is 200");
     }
@@ -65,7 +66,8 @@ public class NSITest {
 
         String invalidEndpoint = "/api/invalid_endpoint";
         String requestBody = "{\"email\": \"" + loginDetails.getEmail() + "\", \"password\": \"" + loginDetails.getPassword() + "\"}";
-        Response response = new SearchApi().sendPostRequest(invalidEndpoint, requestBody, headers);
+        SearchApi searchApi = new SearchApi() {}; // Instantiate like this since SearchApi is abstract
+        Response response = searchApi.sendPostRequest(invalidEndpoint, requestBody, headers);
 
         assertEquals(404, response.getStatusCode(), "Expected status code is 404 for invalid endpoint");
         System.out.println("Response: " + response.asString());

@@ -21,7 +21,6 @@ public class TokenManager {
             throw new RuntimeException("Failed to authenticate with the server. HTTP Status code: " + response.getStatusCode());
         }
 
-        // Log the response for debugging
         System.out.println("Response: " + response.asString());
 
         return response.jsonPath().getString("access_token");

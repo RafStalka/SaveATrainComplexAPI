@@ -1,45 +1,47 @@
 package com.saveatrain.saveatraincomplexapi.api.applicationApi;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.saveatrain.saveatraincomplexapi.api.RestResource;
 import com.saveatrain.saveatraincomplexapi.serialising.SalesAgentSessionPOJO;
 import com.saveatrain.utils.GetPropertyValues;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 
+import java.util.HashMap;
 import java.util.Map;
 
-import static com.saveatrain.saveatraincomplexapi.api.ApiClient.getRequestSpec;
-import static com.saveatrain.saveatraincomplexapi.api.ApiClient.getResponseSpec;
-import static io.restassured.RestAssured.given;
 
-public class SearchApi {
+public abstract class SearchApi extends RestResource {
 
-    public static Response postRequest(SalesAgentSessionPOJO session) {
-        String url = GetPropertyValues.getProperty("serverURL") + "/api/sales_agent_sessions";
-        return RestAssured.given()
-                .baseUri(url)
-                .contentType("application/json")
-                .body(session)
-                .when()
-                .post();
+    private static final String SALES_AGENT_ENDPOINT = GetPropertyValues.getProperty("base.path");
+
+    public static Response postSalesAgentSession(SalesAgentSessionPOJO session) {
+        String requestBody = sessionAsJson(session);
+        return executePostRequest(SALES_AGENT_ENDPOINT, requestBody, new HashMap<>());
     }
 
     public Response sendPostRequest(String endpoint, String requestBody, Map<String, String> headers) {
+        return executePostRequest(endpoint, requestBody, headers);
+    }
+
+    private static Response executePostRequest(String endpoint, String requestBody, Map<String, String> headers) {
         String baseUrl = GetPropertyValues.getProperty("serverURL");
         return RestAssured.given()
                 .baseUri(baseUrl)
                 .headers(headers)
-                .contentType("application/json")
+                .contentType(GetPropertyValues.getProperty("content.type"))
                 .body(requestBody)
                 .when()
                 .post(endpoint);
     }
 
-    public static Response getRequest(String endpoint, String searchId) {
-        return given(getRequestSpec()).
-                when().get(endpoint + "/" + searchId).
-                then().spec(getResponseSpec()).
-                extract().
-                response();
+    private static String sessionAsJson(SalesAgentSessionPOJO session) {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            return mapper.writeValueAsString(session);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to convert session to JSON", e);
+        }
     }
-
 }
