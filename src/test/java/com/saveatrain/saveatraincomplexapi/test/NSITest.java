@@ -19,8 +19,7 @@ import java.util.Map;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class NSITest {
     private SalesAgentSessionPOJO loginDetails;
@@ -140,10 +139,8 @@ public class NSITest {
                 .then()
                 .extract().response();
 
-        // Check if the response status code is 200
         assertEquals(200, response.getStatusCode());
 
-        // Deserialize the response body to SearchResponsePOJO
         SearchResponsePOJO searchResponse;
         try {
             searchResponse = objectMapper.readValue(response.getBody().asString(), SearchResponsePOJO.class);
@@ -153,5 +150,271 @@ public class NSITest {
 
         assertNotNull(searchResponse);
         assertNotNull(searchResponse.getIdentifier());
+    }
+
+    @Test
+    public void testPostSearchSession_MissingToken() {
+        RestAssured.baseURI = baseUri;
+
+        // Ustaw agentEmail, ale brak tokena
+        if (agentEmail == null) {
+            throw new IllegalArgumentException("Agent Email jest pusty. Upewnij się, że wartość ta jest poprawnie ustawiona.");
+        }
+        String missingToken = "";
+
+        // Ciało żądania (taka sama logika jak w sukcesie)
+        // ...
+
+        Response response = given()
+                .header("X-Agent-Email", agentEmail)
+                .header("X-Agent-Token", missingToken)
+                .contentType(ContentType.JSON)
+                //.body(requestBody)
+                .when()
+                .post("/api/searches")
+                .then()
+                .statusCode(403) // Zakładamy status 403 Forbidden
+                .extract().response();
+        
+        assertEquals("Invalid token or missing token", response.getBody().asString());
+    }
+
+    @Test
+    public void testPostSearchSession_InvalidUid() {
+        RestAssured.baseURI = baseUri;
+
+        if (token == null || agentEmail == null) {
+            throw new IllegalArgumentException("Token lub Agent Email są puste. Upewnij się, że wartości te są poprawnie ustawione.");
+        }
+
+        Search search = new Search();
+        search.setDepartureDatetime("2024-08-24 07:00");
+
+        _0 passenger = new _0();
+        passenger.setAge(41);
+        PassengerTypeAttributes passengerType = new PassengerTypeAttributes();
+        passengerType.setType("Search::PassengerType::Adult");
+        passenger.setPassengerTypeAttributes(passengerType);
+
+        SearchesPassengersAttributes passengersAttributes = new SearchesPassengersAttributes();
+        passengersAttributes.set0(passenger);
+        search.setSearchesPassengersAttributes(passengersAttributes);
+
+        RouteAttributes route = new RouteAttributes();
+        OriginStationAttributes originStation = new OriginStationAttributes();
+        originStation.setUid("INVALID_UID");
+        DestinationStationAttributes destinationStation = new DestinationStationAttributes();
+        destinationStation.setUid("INVALID_UID");
+        route.setOriginStationAttributes(originStation);
+        route.setDestinationStationAttributes(destinationStation);
+        search.setRouteAttributes(route);
+
+        SearchPOJO searchRequest = new SearchPOJO();
+        searchRequest.setSearch(search);
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String requestBody;
+
+        try {
+            requestBody = objectMapper.writeValueAsString(searchRequest);
+        } catch (Exception e) {
+            throw new RuntimeException("Nie udało się zserializować ciała żądania", e);
+        }
+
+        Response response = given()
+                .header("X-Agent-Email", agentEmail)
+                .header("X-Agent-Token", token)
+                .contentType(ContentType.JSON)
+                .body(requestBody)
+                .when()
+                .post("/api/searches")
+                .then()
+                .statusCode(400) // Zakładamy status 400 Bad Request
+                .extract().response();
+
+        assertEquals("Invalid station UID", response.getBody().asString());
+    }
+
+    @Test
+    public void testPostSearchSession_Success() {
+        RestAssured.baseURI = baseUri;
+
+        if (token == null || agentEmail == null) {
+            throw new IllegalArgumentException("Token lub Agent Email są puste. Upewnij się, że wartości te są poprawnie ustawione.");
+        }
+
+        assertTrue(token.length() >= 30, "Token jest zbyt krótki");
+
+        assertTrue(token.matches("^[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+$"), "Token ma nieprawidłowy wzorzec");
+
+        Search search = new Search();
+        search.setDepartureDatetime("2024-08-24 07:00");
+
+        _0 passenger = new _0();
+        passenger.setAge(41);
+        PassengerTypeAttributes passengerType = new PassengerTypeAttributes();
+        passengerType.setType("Search::PassengerType::Adult");
+        passenger.setPassengerTypeAttributes(passengerType);
+
+        SearchesPassengersAttributes passengersAttributes = new SearchesPassengersAttributes();
+        passengersAttributes.set0(passenger);
+        search.setSearchesPassengersAttributes(passengersAttributes);
+
+        RouteAttributes route = new RouteAttributes();
+        OriginStationAttributes originStation = new OriginStationAttributes();
+        originStation.setUid("SAT_DE_BE_EODMS");
+        DestinationStationAttributes destinationStation = new DestinationStationAttributes();
+        destinationStation.setUid("SAT_DE_HA_NJFMU");
+        route.setOriginStationAttributes(originStation);
+        route.setDestinationStationAttributes(destinationStation);
+        search.setRouteAttributes(route);
+
+        SearchPOJO searchRequest = new SearchPOJO();
+        searchRequest.setSearch(search);
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String requestBody;
+
+        try {
+            requestBody = objectMapper.writeValueAsString(searchRequest);
+        } catch (Exception e) {
+            throw new RuntimeException("Nie udało się zserializować ciała żądania", e);
+        }
+
+        Response response = given()
+                .header("X-Agent-Email", agentEmail)
+                .header("X-Agent-Token", token)
+                .contentType(ContentType.JSON)
+                .body(requestBody)
+                .when()
+                .post("/api/searches")
+                .then()
+                .statusCode(200)
+                .extract().response();
+
+        assertNotNull(response.getBody());
+
+        SearchResponsePOJO searchResponse;
+        try {
+            searchResponse = objectMapper.readValue(response.getBody().asString(), SearchResponsePOJO.class);
+        } catch (Exception e) {
+            throw new RuntimeException("Nie udało się zde-serializować ciała odpowiedzi", e);
+        }
+
+        assertNotNull(searchResponse);
+        assertNotNull(searchResponse.getIdentifier());
+    }
+
+    @Test
+    public void testPostSearchSession_InvalidTokenPattern() {
+        RestAssured.baseURI = baseUri;
+
+        String invalidToken = "invalid!token!format";
+
+        assertFalse(invalidToken.matches("^[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+$"), "Token ma poprawny wzorzec, co jest nieoczekiwane");
+
+        Search search = new Search();
+        search.setDepartureDatetime("2024-08-24 07:00");
+
+        _0 passenger = new _0();
+        passenger.setAge(41);
+        PassengerTypeAttributes passengerType = new PassengerTypeAttributes();
+        passengerType.setType("Search::PassengerType::Adult");
+        passenger.setPassengerTypeAttributes(passengerType);
+
+        SearchesPassengersAttributes passengersAttributes = new SearchesPassengersAttributes();
+        passengersAttributes.set0(passenger);
+        search.setSearchesPassengersAttributes(passengersAttributes);
+
+        RouteAttributes route = new RouteAttributes();
+        OriginStationAttributes originStation = new OriginStationAttributes();
+        originStation.setUid("SAT_DE_BE_EODMS");
+        DestinationStationAttributes destinationStation = new DestinationStationAttributes();
+        destinationStation.setUid("SAT_DE_HA_NJFMU");
+        route.setOriginStationAttributes(originStation);
+        route.setDestinationStationAttributes(destinationStation);
+        search.setRouteAttributes(route);
+
+        SearchPOJO searchRequest = new SearchPOJO();
+        searchRequest.setSearch(search);
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String requestBody;
+
+        try {
+            requestBody = objectMapper.writeValueAsString(searchRequest);
+        } catch (Exception e) {
+            throw new RuntimeException("Nie udało się zserializować ciała żądania", e);
+        }
+
+        Response response = given()
+                .header("X-Agent-Email", agentEmail)
+                .header("X-Agent-Token", invalidToken)
+                .contentType(ContentType.JSON)
+                .body(requestBody)
+                .when()
+                .post("/api/searches")
+                .then()
+                .statusCode(403) // Zakładamy status 403 Forbidden
+                .extract().response();
+
+        assertEquals("Invalid token or missing token", response.getBody().asString());
+    }
+
+    @Test
+    public void testPostSearchSession_TokenTooShort() {
+        RestAssured.baseURI = baseUri;
+
+        String shortToken = "short.token";
+
+        assertTrue(shortToken.length() < 30, "Token jest dłuższy niż oczekiwano, co jest nieoczekiwane");
+
+        Search search = new Search();
+        search.setDepartureDatetime("2024-08-24 07:00");
+
+        _0 passenger = new _0();
+        passenger.setAge(41);
+        PassengerTypeAttributes passengerType = new PassengerTypeAttributes();
+        passengerType.setType("Search::PassengerType::Adult");
+        passenger.setPassengerTypeAttributes(passengerType);
+
+        SearchesPassengersAttributes passengersAttributes = new SearchesPassengersAttributes();
+        passengersAttributes.set0(passenger);
+        search.setSearchesPassengersAttributes(passengersAttributes);
+
+        RouteAttributes route = new RouteAttributes();
+        OriginStationAttributes originStation = new OriginStationAttributes();
+        originStation.setUid("SAT_DE_BE_EODMS");
+        DestinationStationAttributes destinationStation = new DestinationStationAttributes();
+        destinationStation.setUid("SAT_DE_HA_NJFMU");
+        route.setOriginStationAttributes(originStation);
+        route.setDestinationStationAttributes(destinationStation);
+        search.setRouteAttributes(route);
+
+        SearchPOJO searchRequest = new SearchPOJO();
+        searchRequest.setSearch(search);
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String requestBody;
+
+        try {
+            requestBody = objectMapper.writeValueAsString(searchRequest);
+        } catch (Exception e) {
+            throw new RuntimeException("Nie udało się zserializować ciała żądania", e);
+        }
+
+        Response response = given()
+                .header("X-Agent-Email", agentEmail)
+                .header("X-Agent-Token", shortToken)
+                .contentType(ContentType.JSON)
+                .body(requestBody)
+                .when()
+                .post("/api/searches")
+                .then()
+                .statusCode(403) // Zakładamy status 403 Forbidden
+                .extract().response();
+
+
+        assertEquals("Invalid token or missing token", response.getBody().asString());
     }
 }
