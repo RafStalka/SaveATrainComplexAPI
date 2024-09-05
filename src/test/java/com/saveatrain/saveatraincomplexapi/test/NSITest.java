@@ -3,17 +3,22 @@ package com.saveatrain.saveatraincomplexapi.test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saveatrain.saveatraincomplexapi.api.TokenManager;
 import com.saveatrain.saveatraincomplexapi.api.applicationApi.SearchApi;
-import com.saveatrain.saveatraincomplexapi.deserialising.SearchResponsePOJO;
-import com.saveatrain.saveatraincomplexapi.serialising.*;
+import com.saveatrain.saveatraincomplexapi.deserialising.search.Result;
+import com.saveatrain.saveatraincomplexapi.deserialising.search.SearchResponsePOJO;
+import com.saveatrain.saveatraincomplexapi.serialising.search.*;
 import com.saveatrain.utils.GetPropertyValues;
 import io.restassured.RestAssured;
 import io.restassured.config.RestAssuredConfig;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
@@ -21,11 +26,17 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class NSITest {
     private SalesAgentSessionPOJO loginDetails;
     private String token;
     private String baseUri;
     private String agentEmail;
+
+    private static String identifier;
+    private static List<Integer> resultIds;
+
+    private static final String STORAGE_FILE = "test_storage.txt";
 
     @BeforeEach
     public void setUp() {
@@ -65,7 +76,8 @@ public class NSITest {
 
         String endpoint = "/api/sales_agent_sessions";
         String requestBody = "{\"email\": \"" + loginDetails.getEmail() + "\", \"password\": \"" + loginDetails.getPassword() + "\"}";
-        SearchApi searchApi = new SearchApi() {}; // Instantiate like this since SearchApi is abstract
+        SearchApi searchApi = new SearchApi() {
+        }; // Instantiate like this since SearchApi is abstract
         Response response = searchApi.sendPostRequest(endpoint, requestBody, headers);
 
         assertEquals(200, response.getStatusCode(), "Expected status code is 200");
@@ -79,7 +91,8 @@ public class NSITest {
 
         String invalidEndpoint = "/api/invalid_endpoint";
         String requestBody = "{\"email\": \"" + loginDetails.getEmail() + "\", \"password\": \"" + loginDetails.getPassword() + "\"}";
-        SearchApi searchApi = new SearchApi() {}; // Instantiate like this since SearchApi is abstract
+        SearchApi searchApi = new SearchApi() {
+        }; // Instantiate like this since SearchApi is abstract
         Response response = searchApi.sendPostRequest(invalidEndpoint, requestBody, headers);
 
         assertEquals(404, response.getStatusCode(), "Expected status code is 404 for invalid endpoint");
@@ -175,7 +188,7 @@ public class NSITest {
                 .then()
                 .statusCode(403) // Zakładamy status 403 Forbidden
                 .extract().response();
-        
+
         assertEquals("Invalid token or missing token", response.getBody().asString());
     }
 
@@ -370,7 +383,7 @@ public class NSITest {
         assertTrue(shortToken.length() < 30, "Token jest dłuższy niż oczekiwano, co jest nieoczekiwane");
 
         Search search = new Search();
-        search.setDepartureDatetime("2024-08-24 07:00");
+        search.setDepartureDatetime("2024-09-24 07:00");
 
         _0 passenger = new _0();
         passenger.setAge(41);
@@ -414,7 +427,144 @@ public class NSITest {
                 .statusCode(403) // Zakładamy status 403 Forbidden
                 .extract().response();
 
-
         assertEquals("Invalid token or missing token", response.getBody().asString());
     }
+
+    @Test
+    @Order(1)
+    public void testPostSearchSession_SaveResponseValues() {
+
+        RestAssured.baseURI = baseUri;
+
+        String shortToken = "short.token";
+
+        assertTrue(shortToken.length() < 30, "Token jest dłuższy niż oczekiwano, co jest nieoczekiwane");
+
+        Search search = new Search();
+        search.setDepartureDatetime("2024-09-24 07:00");
+
+        _0 passenger = new _0();
+        passenger.setAge(41);
+        PassengerTypeAttributes passengerType = new PassengerTypeAttributes();
+        passengerType.setType("Search::PassengerType::Adult");
+        passenger.setPassengerTypeAttributes(passengerType);
+
+        SearchesPassengersAttributes passengersAttributes = new SearchesPassengersAttributes();
+        passengersAttributes.set0(passenger);
+        search.setSearchesPassengersAttributes(passengersAttributes);
+
+        RouteAttributes route = new RouteAttributes();
+        OriginStationAttributes originStation = new OriginStationAttributes();
+        originStation.setUid("SAT_DE_BE_EODMS");
+        DestinationStationAttributes destinationStation = new DestinationStationAttributes();
+        destinationStation.setUid("SAT_DE_HA_NJFMU");
+        route.setOriginStationAttributes(originStation);
+        route.setDestinationStationAttributes(destinationStation);
+        search.setRouteAttributes(route);
+
+        SearchPOJO searchRequest = new SearchPOJO();
+        searchRequest.setSearch(search);
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String requestBody;
+        try {
+            requestBody = objectMapper.writeValueAsString(searchRequest);
+        } catch (Exception e) {
+            throw new RuntimeException("Nie udało się zserializować ciała żądania", e);
+        }
+
+        System.out.println("Request Body: " + requestBody);
+
+        Response response = given()
+                .header("X-Agent-Email", agentEmail)
+                .header("X-Agent-Token", token)
+                .contentType(ContentType.JSON)
+                .body(requestBody)
+                .when()
+                .post("/api/searches")
+                .then()
+                .log().all() // Logs the response details
+                .statusCode(200)
+                .extract().response();
+
+        System.out.println("Response Body: " + response.getBody().asString());
+
+        assertNotNull(response.getBody());
+
+        System.out.println("Response Body: " + response.getBody().asString());
+
+        SearchResponsePOJO searchResponse;
+        try {
+            searchResponse = objectMapper.readValue(response.getBody().asString(), SearchResponsePOJO.class);
+        } catch (Exception e) {
+            throw new RuntimeException("Nie udało się zde-serializować ciała odpowiedzi", e);
+        }
+
+        assertNotNull(searchResponse);
+        assertNotNull(searchResponse.getIdentifier());
+
+        String identifier = searchResponse.getIdentifier();
+        List<Integer> resultIds = new ArrayList<>();
+        if (searchResponse.getResults() != null) {
+            for (Result result : searchResponse.getResults()) {
+                resultIds.add(result.getId());
+            }
+        }
+
+        System.out.println("Identifier: " + identifier);
+        System.out.println("Result IDs: " + resultIds);
+
+        try (FileWriter writer = new FileWriter(STORAGE_FILE)) {
+            writer.write(identifier + "\n");
+            for (Integer resultId : resultIds) {
+                writer.write(resultId + "\n");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Nie udało się zapisać wartości do pliku", e);
+        }
+    }
+
+    @Test
+    @Order(2)
+    public void testUseSavedResponseValues() {
+        RestAssured.baseURI = baseUri;
+
+        String identifier = null;
+        List<Integer> resultIds = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(STORAGE_FILE))) {
+            identifier = reader.readLine();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                resultIds.add(Integer.parseInt(line));
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Nie udało się odczytać wartości z pliku", e);
+        }
+
+        assertNotNull(identifier, "Identifier powinien być ustawiony");
+        assertNotNull(resultIds, "Result IDs powinny być ustawione");
+        assertFalse(resultIds.isEmpty(), "Lista Result IDs nie powinna być pusta");
+
+        System.out.println("Identifier used in next test: " + identifier);
+        System.out.println("Result IDs used in next test: " + resultIds);
+
+        for (int resultId : resultIds) {
+            String getRequestUrl = "/api/searches/" + identifier + "/results/" + resultId + "/sub_routes";
+
+            System.out.println("Request URL: " + getRequestUrl);
+            Response response = given()
+                    .header("X-Agent-Email", agentEmail)
+                    .header("X-Agent-Token", token)
+                    .contentType(ContentType.JSON)
+                    .when()
+                    .get(getRequestUrl)
+                    .then()
+                    .log().all() // Logs the response details
+                    .statusCode(200)
+                    .extract().response();
+
+            System.out.println("Response for result ID " + resultId + ": " + response.getBody().asString());
+        }
+    }
 }
+

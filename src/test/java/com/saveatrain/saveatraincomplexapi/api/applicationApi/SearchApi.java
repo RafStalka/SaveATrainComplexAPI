@@ -3,7 +3,7 @@ package com.saveatrain.saveatraincomplexapi.api.applicationApi;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saveatrain.saveatraincomplexapi.api.RestResource;
-import com.saveatrain.saveatraincomplexapi.serialising.SalesAgentSessionPOJO;
+import com.saveatrain.saveatraincomplexapi.serialising.search.SalesAgentSessionPOJO;
 import com.saveatrain.utils.GetPropertyValues;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;

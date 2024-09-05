@@ -1,6 +1,6 @@
 package com.saveatrain.saveatraincomplexapi.api;
 
-import com.saveatrain.saveatraincomplexapi.serialising.SalesAgentSessionPOJO;
+import com.saveatrain.saveatraincomplexapi.serialising.search.SalesAgentSessionPOJO;
 import com.saveatrain.utils.GetPropertyValues;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
