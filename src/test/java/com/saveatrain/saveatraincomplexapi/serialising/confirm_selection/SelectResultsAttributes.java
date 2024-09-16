@@ -4,54 +4,44 @@ package com.saveatrain.saveatraincomplexapi.serialising.confirm_selection;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SelectResultsAttributes {
 
-    private static final String SEARCH_IDENTIFIER = "search_identifier";
-    private static final String RESULT_ID = "result_id";
-    private static final String TRANSFERS_ATTRIBUTES = "transfers_attributes";
+    private String search_identifier;
+    private int result_id;
+    private Map<String, TransferData> transfers_attributes;
 
-    @JsonProperty(SEARCH_IDENTIFIER)
-    private String searchIdentifier;
-    @JsonProperty(RESULT_ID)
-    private Integer resultId;
-    @JsonProperty(TRANSFERS_ATTRIBUTES)
-    private TransferData transferData;
-
-    public SelectResultsAttributes(String searchIdentifier, Integer resultId, TransferData transferData) {
-        this.searchIdentifier = searchIdentifier;
-        this.resultId = resultId;
-        this.transferData = transferData;
+    public SelectResultsAttributes(String searchIdentifier, int resultId, TransferData transferData) {
+        this.search_identifier = searchIdentifier;
+        this.result_id = resultId;
+        this.transfers_attributes = new HashMap<>();
+        this.transfers_attributes.put("0", transferData); // Ustawienie klucza "0"
     }
 
-    @JsonProperty(SEARCH_IDENTIFIER)
-    public String getSearchIdentifier() {
-        return searchIdentifier;
+    public String getSearch_identifier() {
+        return search_identifier;
     }
 
-    @JsonProperty(SEARCH_IDENTIFIER)
-    public void setSearchIdentifier(String searchIdentifier) {
-        this.searchIdentifier = searchIdentifier;
+    public void setSearch_identifier(String search_identifier) {
+        this.search_identifier = search_identifier;
     }
 
-    @JsonProperty(RESULT_ID)
-    public Integer getResultId() {
-        return resultId;
+    public int getResult_id() {
+        return result_id;
     }
 
-    @JsonProperty(RESULT_ID)
-    public void setResultId(Integer resultId) {
-        this.resultId = resultId;
+    public void setResult_id(int result_id) {
+        this.result_id = result_id;
     }
 
-    @JsonProperty(TRANSFERS_ATTRIBUTES)
-    public TransferData getTransfersAttributes() {
-        return transferData;
+    public Map<String, TransferData> getTransfers_attributes() {
+        return transfers_attributes;
     }
 
-    @JsonProperty(TRANSFERS_ATTRIBUTES)
-    public void setTransfersAttributes(TransferData transferData) {
-        this.transferData = transferData;
+    public void setTransfers_attributes(Map<String, TransferData> transfers_attributes) {
+        this.transfers_attributes = transfers_attributes;
     }
-
 }

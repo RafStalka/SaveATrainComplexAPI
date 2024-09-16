@@ -8,52 +8,48 @@ import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Change {
-
-    public Change(List<OriginStationName> originStationNames, List<DestinationStationName> destinationStationNames, String originStationSatUid, String destinationStationSatUid, String departureDatetime, String arrivalDatetime, Train train, String type) {
-        this.originStationNames = originStationNames;
-        this.destinationStationNames = destinationStationNames;
-        this.originStationSatUid = originStationSatUid;
-        this.destinationStationSatUid = destinationStationSatUid;
-        this.departureDatetime = departureDatetime;
-        this.arrivalDatetime = arrivalDatetime;
-        this.train = train;
-        this.type = type;
-    }
-
     @JsonProperty("origin_station_names")
-    private List<OriginStationName> originStationNames;
+    private List<StationName> originStationNames;
+
     @JsonProperty("destination_station_names")
-    private List<DestinationStationName> destinationStationNames;
+    private List<StationName> destinationStationNames;
+
     @JsonProperty("origin_station_sat_uid")
     private String originStationSatUid;
+
     @JsonProperty("destination_station_sat_uid")
     private String destinationStationSatUid;
+
     @JsonProperty("departure_datetime")
     private String departureDatetime;
+
     @JsonProperty("arrival_datetime")
     private String arrivalDatetime;
+
     @JsonProperty("train")
     private Train train;
+
     @JsonProperty("type")
     private String type;
 
+    // Gettery i Settery
     @JsonProperty("origin_station_names")
-    public List<OriginStationName> getOriginStationNames() {
+    public List<StationName> getOriginStationNames() {
         return originStationNames;
     }
 
     @JsonProperty("origin_station_names")
-    public void setOriginStationNames(List<OriginStationName> originStationNames) {
+    public void setOriginStationNames(List<StationName> originStationNames) {
         this.originStationNames = originStationNames;
     }
 
     @JsonProperty("destination_station_names")
-    public List<DestinationStationName> getDestinationStationNames() {
+    public List<StationName> getDestinationStationNames() {
         return destinationStationNames;
     }
 
     @JsonProperty("destination_station_names")
-    public void setDestinationStationNames(List<DestinationStationName> destinationStationNames) {
+    public void setDestinationStationNames(List<StationName> destinationStationNames) {
         this.destinationStationNames = destinationStationNames;
     }
 
@@ -116,5 +112,4 @@ public class Change {
     public void setType(String type) {
         this.type = type;
     }
-
 }

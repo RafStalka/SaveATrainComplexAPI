@@ -8,18 +8,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class ConfirmSelectionPOJO {
 
     @JsonProperty("select_results_attributes")
-    private SelectResultsAttributes selectResultsAttributes;
+    private SelectResultsAttributes select_results_attributes;
 
     public ConfirmSelectionPOJO(SelectResultsAttributes selectResultsAttributes) {
-        this.selectResultsAttributes = selectResultsAttributes;
+        this.select_results_attributes = selectResultsAttributes;
     }
 
-    public SelectResultsAttributes getSelectResultsAttributes() {
-        return selectResultsAttributes;
+    public SelectResultsAttributes getSelect_results_attributes() {
+        return select_results_attributes;
     }
 
-    public void setSelectResultsAttributes(SelectResultsAttributes selectResultsAttributes) {
-        this.selectResultsAttributes = selectResultsAttributes;
+    public void setSelect_results_attributes(SelectResultsAttributes select_results_attributes) {
+        this.select_results_attributes = select_results_attributes;
     }
-
 }

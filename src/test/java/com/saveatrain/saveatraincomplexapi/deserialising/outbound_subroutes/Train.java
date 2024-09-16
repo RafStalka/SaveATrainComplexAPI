@@ -7,16 +7,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Train {
 
-    public Train(String category, String number) {
-        this.category = category;
-        this.number = number;
-    }
-
     @JsonProperty("category")
     private String category;
+
     @JsonProperty("number")
     private String number;
 
+    // Gettery i Settery
     @JsonProperty("category")
     public String getCategory() {
         return category;

@@ -8,20 +8,16 @@ import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class OutboundSubroutesPOJO {
-
-    public OutboundSubroutesPOJO(Integer resultId, String searchIdentifier, List<Transfer> transfers) {
-        this.resultId = resultId;
-        this.searchIdentifier = searchIdentifier;
-        this.transfers = transfers;
-    }
-
     @JsonProperty("result_id")
     private Integer resultId;
+
     @JsonProperty("search_identifier")
     private String searchIdentifier;
+
     @JsonProperty("transfers")
     private List<Transfer> transfers;
 
+    // Gettery i settery
     @JsonProperty("result_id")
     public Integer getResultId() {
         return resultId;

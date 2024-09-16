@@ -7,20 +7,40 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TransferData {
 
+    private int id;
 
-    private static final String TRANSFER_ATTRIBUTE_KEY = "0";
+    @JsonProperty("fare_id")
+    private int fareId;
 
-    @JsonProperty(TRANSFER_ATTRIBUTE_KEY)
-    private TransferData transferData;
+    public TransferData() {}
 
-    @JsonProperty(TRANSFER_ATTRIBUTE_KEY)
-    public TransferData getTransferData() {
-        return transferData;
+    public TransferData(int id, int fareId) {
+        this.id = id;
+        this.fareId = fareId;
     }
 
-    @JsonProperty(TRANSFER_ATTRIBUTE_KEY)
-    public void setTransferData(TransferData transferData) {
-        this.transferData = transferData;
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public int getFareId() {
+        return fareId;
+    }
+
+    public void setFareId(int fareId) {
+        this.fareId = fareId;
+    }
+
+    @Override
+    public String toString() {
+        return "TransferData{" +
+                "id=" + id +
+                ", fare_id=" + fareId +
+                '}';
     }
 
 }

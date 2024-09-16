@@ -7,19 +7,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Fare {
 
-    public Fare(Integer id, String name, String price) {
-        this.id = id;
-        this.name = name;
-        this.price = price;
-    }
-
     @JsonProperty("id")
     private Integer id;
+
     @JsonProperty("name")
     private String name;
+
     @JsonProperty("price")
     private String price;
 
+    // Gettery i Settery
     @JsonProperty("id")
     public Integer getId() {
         return id;

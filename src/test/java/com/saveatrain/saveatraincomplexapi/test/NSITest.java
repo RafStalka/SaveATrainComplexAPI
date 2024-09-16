@@ -3,8 +3,12 @@ package com.saveatrain.saveatraincomplexapi.test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saveatrain.saveatraincomplexapi.api.TokenManager;
 import com.saveatrain.saveatraincomplexapi.api.applicationApi.SearchApi;
+import com.saveatrain.saveatraincomplexapi.deserialising.outbound_subroutes.*;
 import com.saveatrain.saveatraincomplexapi.deserialising.search.Result;
 import com.saveatrain.saveatraincomplexapi.deserialising.search.SearchResponsePOJO;
+import com.saveatrain.saveatraincomplexapi.serialising.confirm_selection.ConfirmSelectionPOJO;
+import com.saveatrain.saveatraincomplexapi.serialising.confirm_selection.SelectResultsAttributes;
+import com.saveatrain.saveatraincomplexapi.serialising.confirm_selection.TransferData;
 import com.saveatrain.saveatraincomplexapi.serialising.search.*;
 import com.saveatrain.utils.GetPropertyValues;
 import io.restassured.RestAssured;
@@ -16,6 +20,9 @@ import org.junit.jupiter.api.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -33,8 +40,12 @@ public class NSITest {
     private String baseUri;
     private String agentEmail;
 
+    private static int transferId;
+    private static List<Integer> fareIds = new ArrayList<>();
     private static String identifier;
-    private static List<Integer> resultIds;
+    private static List<Integer> resultIds = new ArrayList<>();
+    private static String searchId;
+    private static String resultId;
 
     private static final String STORAGE_FILE = "test_storage.txt";
 
@@ -433,13 +444,13 @@ public class NSITest {
     @Test
     @Order(1)
     public void testPostSearchSession_SaveResponseValues() {
-
         RestAssured.baseURI = baseUri;
 
+        // Przykładowy token o długości mniejszej niż 30 znaków
         String shortToken = "short.token";
-
         assertTrue(shortToken.length() < 30, "Token jest dłuższy niż oczekiwano, co jest nieoczekiwane");
 
+        // Przygotowanie danych do wysłania w żądaniu
         Search search = new Search();
         search.setDepartureDatetime("2024-09-24 07:00");
 
@@ -489,9 +500,8 @@ public class NSITest {
 
         System.out.println("Response Body: " + response.getBody().asString());
 
+        // Walidacja odpowiedzi
         assertNotNull(response.getBody());
-
-        System.out.println("Response Body: " + response.getBody().asString());
 
         SearchResponsePOJO searchResponse;
         try {
@@ -514,6 +524,7 @@ public class NSITest {
         System.out.println("Identifier: " + identifier);
         System.out.println("Result IDs: " + resultIds);
 
+        // Zapis wartości do pliku
         try (FileWriter writer = new FileWriter(STORAGE_FILE)) {
             writer.write(identifier + "\n");
             for (Integer resultId : resultIds) {
@@ -527,44 +538,155 @@ public class NSITest {
     @Test
     @Order(2)
     public void testUseSavedResponseValues() {
+        // Konfiguracja baseUri dla RestAssured
         RestAssured.baseURI = baseUri;
 
-        String identifier = null;
-        List<Integer> resultIds = new ArrayList<>();
+        Response response = given()
+                .header("X-Agent-Email", agentEmail)
+                .header("X-Agent-Token", token)
+                .contentType(ContentType.JSON)
+                .when()
+                .get(String.format("/searches/%s/results/%s/sub_routes", identifier, resultIds.get(0)))
+                .then()
+                .statusCode(200)
+                .extract()
+                .response();
+
+        System.out.println(response.prettyPrint());
+    }
+
+
+    @Test
+    @Order(3)
+    public void testPostConfirmSelection() {
+        RestAssured.baseURI = baseUri;
+
+        String searchIdentifier = null;
+        Integer resultId = null;
+        Integer transferId = null;
+        Integer fareId = null;
+
+        // Odczytanie search_identifier, result_id, transfer_id, fare_id z pliku
         try (BufferedReader reader = new BufferedReader(new FileReader(STORAGE_FILE))) {
-            identifier = reader.readLine();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                resultIds.add(Integer.parseInt(line));
-            }
+            // Pierwsza linia to searchIdentifier
+            searchIdentifier = reader.readLine().trim();
+            Map<String, Integer> transferAndFareData = collectTransferAndFareData(reader);
+            resultId = transferAndFareData.get("resultId");
+            transferId = transferAndFareData.get("transferId");
+            fareId = transferAndFareData.get("fareId");
         } catch (Exception e) {
             throw new RuntimeException("Nie udało się odczytać wartości z pliku", e);
         }
 
-        assertNotNull(identifier, "Identifier powinien być ustawiony");
-        assertNotNull(resultIds, "Result IDs powinny być ustawione");
-        assertFalse(resultIds.isEmpty(), "Lista Result IDs nie powinna być pusta");
+        // Debugowanie – wyświetlamy odczytane wartości
+        System.out.println("searchIdentifier: " + searchIdentifier);
+        System.out.println("resultId: " + resultId);
+        System.out.println("transferId: " + transferId);
+        System.out.println("fareId: " + fareId);
 
-        System.out.println("Identifier used in next test: " + identifier);
-        System.out.println("Result IDs used in next test: " + resultIds);
+        // Sprawdzenie poprawności odczytanych wartości
+        assertNotNull(searchIdentifier, "Search Identifier powinien być ustawiony");
+        assertNotNull(resultId, "Result ID powinien być ustawiony");
+        assertNotNull(transferId, "Transfer ID powinien być ustawiony");
+        assertNotNull(fareId, "Fare ID powinien być ustawiony");
 
-        for (int resultId : resultIds) {
-            String getRequestUrl = "/api/searches/" + identifier + "/results/" + resultId + "/sub_routes";
+        // Tworzenie ciała żądania z poprawioną strukturą
+        TransferData transferData = new TransferData();
+        transferData.setId(transferId);
+        transferData.setFareId(fareId);
 
-            System.out.println("Request URL: " + getRequestUrl);
-            Response response = given()
-                    .header("X-Agent-Email", agentEmail)
-                    .header("X-Agent-Token", token)
-                    .contentType(ContentType.JSON)
-                    .when()
-                    .get(getRequestUrl)
-                    .then()
-                    .log().all() // Logs the response details
-                    .statusCode(200)
-                    .extract().response();
+        SelectResultsAttributes selectResultsAttributes = new SelectResultsAttributes(searchIdentifier, resultId, transferData);
+        ConfirmSelectionPOJO confirmSelectionRequest = new ConfirmSelectionPOJO(selectResultsAttributes);
 
-            System.out.println("Response for result ID " + resultId + ": " + response.getBody().asString());
+        ObjectMapper objectMapper = new ObjectMapper();
+        String requestBody;
+        try {
+            requestBody = objectMapper.writeValueAsString(confirmSelectionRequest);
+        } catch (Exception e) {
+            throw new RuntimeException("Nie udało się zserializować ciała żądania", e);
         }
+
+        System.out.println("Request Body: " + requestBody);
+
+        // Wczytanie oczekiwanego ciała żądania z pliku JSON i podmiana zmiennych
+        String expectedRequestBody;
+        String jsonFilePath = "/Users/rafalst/IdeaProjects/SaveATrainComplexAPI/src/test/resources/confirmSelectionBodyRequest.json";
+        try {
+            expectedRequestBody = readJsonFromFile(jsonFilePath)
+                    .replace("{{search_id}}", searchIdentifier)
+                    .replace("\"result_id\": 123", "\"result_id\": " + resultId)
+                    .replace("\"id\": 1234", "\"id\": " + transferId)
+                    .replace("\"fare_id\": 342", "\"fare_id\": " + fareId);
+
+            System.out.println("Expected Request Body: " + expectedRequestBody);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Nie udało się odczytać oczekiwanego ciała żądania z pliku: " + jsonFilePath, e);
+        }
+
+        // Porównanie wygenerowanego i oczekiwanego ciała żądania
+        try {
+            assertEquals(objectMapper.readTree(expectedRequestBody), objectMapper.readTree(requestBody), "Ciało żądania nie jest zgodne z oczekiwanym wzorcem");
+        } catch (Exception e) {
+            throw new RuntimeException("Porównanie ciał żądania nie powiodło się", e);
+        }
+
+        // Debugowanie końcowego URI
+        String finalUri = "/searches/" + searchIdentifier + "/confirm_selection";
+        System.out.println("Final URI: " + finalUri);
+
+        // Wysłanie żądania
+        Response response = given()
+                .header("X-Agent-Email", agentEmail)
+                .header("X-Agent-Token", token)
+                .contentType(ContentType.JSON)
+                .body(requestBody)
+                .when()
+                .post(finalUri)  // Poprawny endpoint sprawdzany w debugowaniu
+                .then()
+                .log().all()  // Logs the response details
+                .extract().response();
+
+        // Wyświetlenie odpowiedzi na konsoli
+        int statusCode = response.getStatusCode();
+        System.out.println("Response Body: " + response.getBody().asString());
+        System.out.println("Response Status Code: " + statusCode);
+
+        // Sprawdzenie kodu odpowiedzi
+        assertEquals(200, statusCode, "Oczekiwany status kod odpowiedzi to 200");
     }
+
+    // Metoda do wczytywania JSON z pliku
+    private String readJsonFromFile(String filePath) throws IOException {
+        System.out.println("Attempting to read JSON from file: " + Paths.get(filePath).toAbsolutePath().toString());
+        return new String(Files.readAllBytes(Paths.get(filePath)));
+    }
+
+    // Metoda do odczytu transferId i fareId z pliku
+    private Map<String, Integer> collectTransferAndFareData(BufferedReader reader) throws IOException {
+        Map<String, Integer> transferAndFareData = new HashMap<>();
+        String line;
+        int lineNumber = 0;
+
+        // Przechodzenie przez każdą linię pliku
+        while ((line = reader.readLine()) != null) {
+            line = line.trim(); // Usunięcie nadmiarowych spacji
+
+            if (lineNumber == 0) {
+                transferAndFareData.put("resultId", Integer.parseInt(line));
+            } else if (lineNumber == 1) {
+                transferAndFareData.put("transferId", Integer.parseInt(line));
+            } else if (lineNumber == 2) {
+                transferAndFareData.put("fareId", Integer.parseInt(line));
+            }
+
+            lineNumber++;
+        }
+
+        // Debugowanie – wyświetlamy zawartość mapy
+        System.out.println("Collected transfer and fare data: " + transferAndFareData);
+        return transferAndFareData;
+    }
+
 }
 
